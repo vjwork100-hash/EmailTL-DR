@@ -1,32 +1,59 @@
 
 export const FREE_LIMIT = 2;
 
+export const SCHEMA_PROMPT = `You are an elite email analyst specializing in business intelligence extraction.
+
+Your task: Parse complex email threads and extract structured intelligence.
+
+Instructions:
+1. Read all emails in chronological order.
+2. Identify the primary decision (if any).
+3. Extract ALL action items (yours and others).
+4. Map stakeholders and their roles.
+5. Build a timeline of events.
+6. Find key quotes that matter.
+7. Calculate confidence score (0-100) based on clarity.
+
+For action items:
+- Identify owner, task, deadline, and priority (URGENT, HIGH, NORMAL, LOW).
+- "John should do X" = Owner: John, Task: X.
+- "We need to X by Friday" = Deadline: Friday, Task: X.
+
+Output only valid JSON.`;
+
 export const SAMPLE_THREADS = [
   {
-    id: 'budget',
-    label: '💰 Budget Approval',
-    content: `From: sarah@company.com\nTo: team@company.com\nDate: Oct 12, 10:00 AM\nSubject: Q4 Campaign Budget - need approval\n\nHi team,\n\nWe need to finalize Q4 campaign budget by Friday. Proposed budget: $500,000 across channels (product launch, holiday promo, partner collab).\n\nLooking for feedback.\n\n---\n\nFrom: john@company.com\nTo: sarah@company.com\nDate: Oct 12, 2:30 PM\nSubject: RE: Q4 Campaign Budget - need approval\n\nSarah,\n\n$500k seems high given economic outlook. I'd suggest $350k instead. We should be more conservative.\n\nJohn\n\n---\n\nFrom: dave@company.com\nTo: sarah@company.com\nDate: Oct 13, 9:15 AM\nSubject: RE: Q4 Campaign Budget - DECISION\n\nYes, I've reviewed the numbers. I'll get CEO approval for $400k (middle ground) by Friday EOD. This should provide enough ROI for the product launch while staying lean.`
+    id: 'budget-q4',
+    label: '💰 Q4 Budget',
+    content: `From: sarah@company.com\nTo: team@company.com\nSubject: Q4 Campaign Budget - need approval\n\nHi team,\n\nWe need to finalize Q4 campaign budget by Friday. Proposed budget: $500k across channels.\n\n---\n\nFrom: dave@company.com\nTo: sarah@company.com\nSubject: RE: Q4 Campaign Budget - DECISION\n\nSarah, approved at $425k. Dave, handle CEO approval by Friday. John, update the forecast.`
   },
   {
-    id: 'hiring',
-    label: '🤝 Hiring Decision',
-    content: `From: recruiter@tech.com\nTo: engineering-leads@tech.com\nDate: Nov 5, 11:00 AM\nSubject: Feedback: Alex for Senior Frontend Role\n\nHi all,\n\nAlex just finished the final round. Thoughts?\n\n---\n\nFrom: dev-lead@tech.com\nDate: Nov 5, 1:45 PM\nSubject: RE: Feedback: Alex\n\nSolid technical skills. React knowledge is top tier. A bit quiet on system design but overall a "Strong Hire" from me.\n\n---\n\nFrom: cto@tech.com\nDate: Nov 6, 8:00 AM\nSubject: RE: Feedback: Alex\n\nI agree. Let's make an offer. Sarah, please prep the package by Tuesday. We need him starting by the 1st.`
-  },
-  {
-    id: 'scheduling',
-    label: '📅 Meeting Shuffle',
-    content: `From: client@partner.com\nTo: account-mgr@agency.com\nDate: Jan 20, 3:00 PM\nSubject: Rescheduling our QBR\n\nHi, can we move Thursday's 2pm to Friday? Something came up.\n\n---\n\nFrom: account-mgr@agency.com\nDate: Jan 20, 3:45 PM\nSubject: RE: Rescheduling our QBR\n\nFriday morning at 10am works for our team. Does that work for you?\n\n---\n\nFrom: client@partner.com\nDate: Jan 21, 9:00 AM\nSubject: RE: Rescheduling our QBR\n\n10am is perfect. See you then.`
+    id: 'hiring-plan',
+    label: '🤝 Hiring',
+    content: `From: hr@company.com\nTo: leadership@company.com\nSubject: 2025 Hiring Plan\n\nHi team, we need to approve headcount. Engineering +5, Sales +3.\n\n---\n\nFrom: cfo@company.com\nSubject: RE: 2025 Hiring Plan\n\nCash runway supports $1.5M total. Approved.`
   }
 ];
 
-export const SCHEMA_PROMPT = `You are a world-class Executive Intelligence Analyst. Your task is to transform messy email threads into high-density intelligence reports.
+export const API_CONFIG = {
+  GEMINI_MODEL: 'gemini-3-flash-preview',
+  MAX_RETRIES: 3,
+  TIMEOUT_MS: 30000,
+  MAX_EMAIL_LENGTH: 100000,
+  MIN_EMAIL_LENGTH: 10
+};
 
-CRITICAL EXTRACTION RULES:
-1. Identify the core DECISION: What was agreed upon? Who decided it? When?
-2. Distinguish OWNERSHIP: Clearly identify tasks for "you" (the recipient/user) vs "others".
-3. Financials: If money is mentioned, extract original vs approved amounts.
-4. Timeline: Create a sequential flow of events.
-5. Confidence: Estimate how certain you are of the summary (0-100) and list specific accurate points.
-6. Stats: Count emails, participants, and determine the time span of the conversation.
+export const ERROR_MESSAGES = {
+  INVALID_EMAIL_LENGTH: 'Email thread must be between 10 and 100,000 characters.',
+  INVALID_EMAIL_FORMAT: 'Please paste a valid email thread with headers.',
+  API_TIMEOUT: 'Analysis is taking too long. Please try again.',
+  API_ERROR: 'Failed to analyze thread. Please try a different email.',
+  NETWORK_ERROR: 'Network error. Please check your connection.',
+  UNKNOWN_ERROR: 'Something went wrong. Please try again.'
+};
 
-Output ONLY valid JSON matching the provided schema. Assume the user is 'You'. Use professional, sharp, and concise language.`;
+export const STORAGE_KEYS = {
+  USER: 'email_smart_user',
+  SUMMARIES: 'email_smart_summaries',
+  ANON_COUNT: 'email_smart_anon_count',
+  PREFERENCES: 'email_smart_preferences'
+};
