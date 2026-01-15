@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { summarizeEmailThread, EmailSmartError } from '../geminiService';
 import { User, EmailSummary } from '../types';
 import { FREE_LIMIT, SAMPLE_THREADS } from '../constants';
 import SummaryDisplay from './SummaryDisplay';
+import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
 
 interface LandingProps {
   user: User | null;
@@ -20,7 +21,7 @@ const Landing: React.FC<LandingProps> = ({ user, onAddSummary }) => {
   const [currentSummary, setCurrentSummary] = useState<EmailSummary | null>(null);
   const navigate = useNavigate();
 
-  const steps = ["Decrypting payload...", "Parsing semantic intent...", "Resolving action owners...", "Finalizing intelligence report..."];
+  const steps = ["Analyzing thread semantics...", "Extracting action owners...", "Resolving deadlines...", "Generating intelligence report..."];
 
   const summariesUsed = user 
     ? user.summaries_used 
@@ -36,7 +37,7 @@ const Landing: React.FC<LandingProps> = ({ user, onAddSummary }) => {
 
   const handleSummarize = async () => {
     if (isLimitReached) {
-      navigate('/signup');
+      onAddSummary({} as any); // Trigger Paywall logic in App.tsx
       return;
     }
 
@@ -49,10 +50,11 @@ const Landing: React.FC<LandingProps> = ({ user, onAddSummary }) => {
 
     setLoading(true);
     setError(null);
+    trackEvent(ANALYTICS_EVENTS.SUMMARIZE_CLICKED, { has_user: !!user });
     
     const interval = setInterval(() => {
       setLoadingStep(prev => (prev + 1) % steps.length);
-    }, 1400);
+    }, 1200);
 
     try {
       const summary = await summarizeEmailThread(thread);
@@ -193,15 +195,6 @@ const Landing: React.FC<LandingProps> = ({ user, onAddSummary }) => {
                 <div className="flex-1">
                   <h4 className="text-rose-900 font-black uppercase tracking-widest text-xs mb-1">Analysis Execution Fault</h4>
                   <p className="text-rose-700 text-sm font-medium leading-relaxed">{error.message}</p>
-                  {error.code === 'RATE_LIMIT' && (
-                    <button 
-                      onClick={handleSummarize}
-                      className="mt-4 text-rose-600 text-xs font-black uppercase tracking-widest hover:underline flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      Re-attempt Analysis
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -238,5 +231,4 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
   </div>
 );
 
-import { Link } from 'react-router-dom';
 export default Landing;

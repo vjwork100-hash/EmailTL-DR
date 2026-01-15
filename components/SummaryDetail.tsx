@@ -6,9 +6,10 @@ import SummaryDisplay from './SummaryDisplay';
 
 interface SummaryDetailProps {
   summaries: EmailSummary[];
+  onRate: (id: string, rating: 'up' | 'down') => void;
 }
 
-const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries }) => {
+const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries, onRate }) => {
   const { id } = useParams<{ id: string }>();
   const summary = summaries.find(s => s.id === id);
 
@@ -26,7 +27,7 @@ const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries }) => {
         <span>/</span>
         <span className="text-slate-900 font-black">{summary.thread_title}</span>
       </div>
-      <SummaryDisplay summary={summary} />
+      <SummaryDisplay summary={summary} onRate={onRate} />
     </div>
   );
 };

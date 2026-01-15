@@ -25,14 +25,20 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
           properties: {
             thread_title: { type: Type.STRING },
             summary: { type: Type.STRING },
-            status: { 
-              type: Type.STRING, 
-              enum: Object.values(SummaryStatus) 
-            },
+            status: { type: Type.STRING, enum: Object.values(SummaryStatus) },
             key_decision: { type: Type.STRING },
-            decision_reasoning: { 
-              type: Type.ARRAY, 
-              items: { type: Type.STRING } 
+            decision_reasoning: { type: Type.ARRAY, items: { type: Type.STRING } },
+            expected_outcome: { type: Type.STRING },
+            decided_by: { type: Type.STRING },
+            decided_at: { type: Type.STRING },
+            budget: {
+              type: Type.OBJECT,
+              properties: {
+                original_amount: { type: Type.STRING },
+                approved_amount: { type: Type.STRING },
+                currency: { type: Type.STRING },
+                category: { type: Type.STRING }
+              }
             },
             your_action_items: {
               type: Type.ARRAY,
@@ -41,8 +47,10 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                 properties: {
                   task: { type: Type.STRING },
                   deadline: { type: Type.STRING },
-                  priority: { type: Type.STRING },
-                  assigned_by: { type: Type.STRING }
+                  priority: { type: Type.STRING, enum: ['URGENT', 'HIGH', 'NORMAL', 'LOW'] },
+                  assigned_by: { type: Type.STRING },
+                  status: { type: Type.STRING, enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED'] },
+                  time_estimate: { type: Type.STRING }
                 }
               }
             },
@@ -54,8 +62,9 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                   task: { type: Type.STRING },
                   owner: { type: Type.STRING },
                   deadline: { type: Type.STRING },
+                  priority: { type: Type.STRING },
                   status: { type: Type.STRING },
-                  owner_role: { type: Type.STRING }
+                  dependencies: { type: Type.ARRAY, items: { type: Type.STRING } }
                 }
               }
             },
@@ -65,9 +74,11 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  role: { type: Type.STRING }
+                  role: { type: Type.STRING },
+                  involvement_level: { type: Type.STRING, enum: ['HIGH', 'MEDIUM', 'LOW'] },
+                  status: { type: Type.STRING }
                 },
-                required: ["name", "role"]
+                required: ["name", "role", "involvement_level"]
               }
             },
             timeline: {
@@ -76,7 +87,9 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                 type: Type.OBJECT,
                 properties: {
                   date: { type: Type.STRING },
-                  event: { type: Type.STRING }
+                  time: { type: Type.STRING },
+                  event: { type: Type.STRING },
+                  is_pending: { type: Type.BOOLEAN }
                 }
               }
             },
@@ -86,24 +99,26 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                 type: Type.OBJECT,
                 properties: {
                   quote: { type: Type.STRING },
-                  author: { type: Type.STRING }
+                  author: { type: Type.STRING },
+                  context: { type: Type.STRING }
                 }
               }
             },
             next_steps: { type: Type.STRING },
-            unresolved_questions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            confidence: { type: Type.STRING }
+            unresolved_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            confidence_score: { type: Type.INTEGER },
+            extraction_accuracy: { type: Type.ARRAY, items: { type: Type.STRING } },
+            email_count: { type: Type.INTEGER },
+            time_span: { type: Type.STRING },
+            participant_count: { type: Type.INTEGER }
           },
-          required: ["thread_title", "summary", "status", "key_decision", "stakeholders"]
+          required: ["thread_title", "summary", "status", "key_decision", "stakeholders", "confidence_score", "email_count", "time_span"]
         }
       }
     });
 
     const text = response.text;
-    if (!text) throw new EmailSmartError("AI returned an empty response. The thread might be too short or complex.", "EMPTY_RESPONSE");
+    if (!text) throw new EmailSmartError("AI returned an empty response.", "EMPTY_RESPONSE");
     
     const rawJson = JSON.parse(text);
     return {
@@ -112,18 +127,7 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
       created_at: new Date().toISOString()
     };
   } catch (error: any) {
-    console.error("Gemini Error Details:", error);
-    
-    if (error?.message?.includes("429")) {
-      throw new EmailSmartError("AI is currently busy (Rate limit exceeded). Please wait a moment and try again.", "RATE_LIMIT");
-    }
-    if (error?.message?.includes("safety")) {
-      throw new EmailSmartError("This thread was flagged by safety filters. We cannot summarize sensitive or restricted content.", "SAFETY_BLOCK");
-    }
-    if (error?.message?.includes("context window")) {
-      throw new EmailSmartError("This email thread is too long for the current AI model. Try splitting it into smaller parts.", "CONTEXT_OVERFLOW");
-    }
-    
-    throw new EmailSmartError(error.message || "An unexpected error occurred while analyzing your email.", "UNKNOWN");
+    console.error("Gemini Error:", error);
+    throw new EmailSmartError(error.message || "Failed to analyze thread.", "UNKNOWN");
   }
 };

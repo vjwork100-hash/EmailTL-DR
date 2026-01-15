@@ -9,12 +9,17 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import Roadmap from './components/Roadmap';
 import Deployment from './components/Deployment';
+import Pricing from './components/Pricing';
+import ShareView from './components/ShareView';
+import UpgradeModal from './components/UpgradeModal';
 import { User, EmailSummary } from './types';
 import { FREE_LIMIT } from './constants';
+import { trackEvent, ANALYTICS_EVENTS } from './analytics';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [summaries, setSummaries] = useState<EmailSummary[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('email_smart_user');
@@ -41,13 +46,20 @@ const App: React.FC = () => {
   };
 
   const addSummary = (summary: EmailSummary) => {
+    const currentUsed = user ? user.summaries_used : Number(localStorage.getItem('email_smart_anon_count') || 0);
+    
+    if (!user && currentUsed >= FREE_LIMIT) {
+      setShowUpgradeModal(true);
+      trackEvent(ANALYTICS_EVENTS.UPGRADE_MODAL_VIEWED, { reason: 'limit_reached' });
+      return;
+    }
+
     const updated = [summary, ...summaries];
     setSummaries(updated);
     localStorage.setItem('email_smart_summaries', JSON.stringify(updated));
     
     if (!user) {
-      const current = Number(localStorage.getItem('email_smart_anon_count') || 0);
-      localStorage.setItem('email_smart_anon_count', (current + 1).toString());
+      localStorage.setItem('email_smart_anon_count', (currentUsed + 1).toString());
     } else {
       const updatedUser = { ...user, summaries_used: user.summaries_used + 1 };
       setUser(updatedUser);
@@ -59,6 +71,13 @@ const App: React.FC = () => {
     const updated = summaries.filter(s => s.id !== id);
     setSummaries(updated);
     localStorage.setItem('email_smart_summaries', JSON.stringify(updated));
+  };
+
+  const rateSummary = (id: string, rating: 'up' | 'down') => {
+    const updated = summaries.map(s => s.id === id ? { ...s, rating } : s);
+    setSummaries(updated);
+    localStorage.setItem('email_smart_summaries', JSON.stringify(updated));
+    trackEvent(ANALYTICS_EVENTS.SUMMARY_RATED, { summary_id: id, rating });
   };
 
   return (
@@ -73,8 +92,10 @@ const App: React.FC = () => {
             <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup onSignupSuccess={handleAuthSuccess} />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/deploy" element={<Deployment />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/share/:id" element={<ShareView summaries={summaries} />} />
             <Route path="/dashboard" element={user ? <Dashboard summaries={summaries} onDelete={deleteSummary} /> : <Navigate to="/login" />} />
-            <Route path="/summary/:id" element={<SummaryDetail summaries={summaries} />} />
+            <Route path="/summary/:id" element={<SummaryDetail summaries={summaries} onRate={rateSummary} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
@@ -87,6 +108,8 @@ const App: React.FC = () => {
           </div>
           &copy; {new Date().getFullYear()} EmailSmart. Engineering the future of communication.
         </footer>
+
+        <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       </div>
     </Router>
   );
