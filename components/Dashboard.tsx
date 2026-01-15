@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { EmailSummary, SummaryStatus, User, ActionItem } from '../types';
 import { FREE_LIMIT, SAMPLE_THREADS } from '../constants';
@@ -13,6 +13,8 @@ interface DashboardProps {
   user?: User | null;
 }
 
+type FilterStatus = 'ALL' | 'URGENT' | 'PENDING' | 'SNOOZED' | 'RESOLVED' | 'INFO';
+
 const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary, user }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showAnalyzer, setShowAnalyzer] = useState(false);
@@ -20,6 +22,10 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
   
   const menuRef = useRef<HTMLDivElement | null>(null);
   const analyzerSteps = ["Analyzing semantics...", "Identifying owners...", "Mapping deadlines...", "Building report..."];
@@ -58,25 +64,40 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
   };
 
   const getCardStatus = (summary: EmailSummary) => {
-    const allActions = [...summary.your_action_items, ...summary.others_action_items];
-    if (allActions.length === 0) return { label: 'Informational', color: 'bg-slate-100 text-slate-500', icon: 'ℹ️' };
+    const yourActions = summary.your_action_items || [];
+    const othersActions = summary.others_action_items || [];
+    const allActions = [...yourActions, ...othersActions];
+    
+    if (allActions.length === 0) return { id: 'INFO' as FilterStatus, label: 'Informational', color: 'bg-slate-100 text-slate-500', icon: 'ℹ️' };
 
     const now = new Date();
     const pending = allActions.filter(a => a.status !== 'COMPLETED');
     const snoozed = pending.filter(a => a.snoozed_until && new Date(a.snoozed_until) > now);
     const unsnoozed = pending.filter(a => !a.snoozed_until || new Date(a.snoozed_until) <= now);
 
-    if (pending.length === 0) return { label: 'Resolved', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: '✅' };
+    if (pending.length === 0) return { id: 'RESOLVED' as FilterStatus, label: 'Resolved', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: '✅' };
     
     const urgentItems = unsnoozed.filter(a => a.priority === 'URGENT' || a.priority === 'HIGH');
-    if (urgentItems.length > 0) return { label: 'Urgent Action', color: 'bg-rose-50 text-rose-600 border-rose-100 animate-pulse', icon: '🔥' };
+    if (urgentItems.length > 0) return { id: 'URGENT' as FilterStatus, label: 'Urgent Action', color: 'bg-rose-50 text-rose-600 border-rose-100 animate-pulse', icon: '🔥' };
     
-    if (unsnoozed.length > 0) return { label: 'Pending', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: '⏳' };
+    if (unsnoozed.length > 0) return { id: 'PENDING' as FilterStatus, label: 'Pending', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: '⏳' };
     
-    if (snoozed.length > 0) return { label: 'Snoozed', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: '🌙' };
+    if (snoozed.length > 0) return { id: 'SNOOZED' as FilterStatus, label: 'Snoozed', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: '🌙' };
 
-    return { label: 'Archived', color: 'bg-slate-100 text-slate-500', icon: '📦' };
+    return { id: 'INFO' as FilterStatus, label: 'Archived', color: 'bg-slate-100 text-slate-500', icon: '📦' };
   };
+
+  const filteredSummaries = useMemo(() => {
+    return (summaries || []).filter(s => {
+      const matchesSearch = s.thread_title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            s.summary?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const status = getCardStatus(s);
+      const matchesFilter = activeFilter === 'ALL' || status.id === activeFilter;
+      
+      return matchesSearch && matchesFilter;
+    });
+  }, [summaries, searchQuery, activeFilter]);
 
   const handleAction = (e: React.MouseEvent, action: string, id: string) => {
     e.preventDefault();
@@ -106,6 +127,19 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
 
   const currentUsed = user?.summaries_used || 0;
   const isPro = user?.subscription_tier === 'pro';
+
+  const FilterChip = ({ status, label, icon }: { status: FilterStatus, label: string, icon?: string }) => (
+    <button
+      onClick={() => setActiveFilter(status)}
+      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center space-x-2
+        ${activeFilter === status 
+          ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-100' 
+          : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}
+    >
+      {icon && <span>{icon}</span>}
+      <span>{label}</span>
+    </button>
+  );
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
@@ -142,7 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
         </div>
       </div>
 
-      {/* ANALYZER TERMINAL (Toggled) */}
+      {/* ANALYZER TERMINAL */}
       {showAnalyzer && (
         <div className="bg-white border border-slate-200 rounded-[3rem] p-8 lg:p-12 shadow-2xl animate-in slide-in-from-top-4 duration-500">
            <div className="space-y-8">
@@ -208,6 +242,29 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
         </div>
       )}
 
+      {/* DASHBOARD SEARCH & FILTERS */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white border border-slate-200 rounded-[2rem] p-4 shadow-sm">
+        <div className="relative w-full md:w-96">
+          <input 
+            type="text" 
+            placeholder="Search reports by title or content..." 
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-indigo-400 transition-all outline-none font-medium text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar w-full md:w-auto justify-center md:justify-end">
+          <FilterChip status="ALL" label="All" />
+          <FilterChip status="URGENT" label="Urgent" icon="🔥" />
+          <FilterChip status="PENDING" label="Pending" icon="⏳" />
+          <FilterChip status="SNOOZED" label="Snoozed" icon="🌙" />
+          <FilterChip status="RESOLVED" label="Resolved" icon="✅" />
+        </div>
+      </div>
+
       {/* DASHBOARD GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
@@ -217,8 +274,8 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Metrics</h3>
              <div className="space-y-6">
                 <div>
-                   <p className="text-3xl font-black text-slate-900 tracking-tighter">{summaries.length}</p>
-                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reports Decoded</p>
+                   <p className="text-3xl font-black text-slate-900 tracking-tighter">{filteredSummaries.length}</p>
+                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reports Matching</p>
                 </div>
                 <div className="pt-6 border-t border-slate-100">
                    <div className="flex justify-between items-end mb-2">
@@ -232,11 +289,6 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
                       />
                    </div>
                 </div>
-                {!isPro && (
-                  <Link to="/pricing" className="block text-center py-3 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-100 transition-colors">
-                    Unlock Unlimited
-                  </Link>
-                )}
              </div>
           </div>
 
@@ -244,32 +296,32 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
              <div className="absolute top-0 right-0 p-4 opacity-10">
                 <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
              </div>
-             <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 relative z-10">Pro Tip</h4>
-             <p className="text-sm font-bold leading-relaxed relative z-10">Action Items with high priority trigger "Urgent" status indicators on your dashboard automatically.</p>
+             <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 relative z-10">Neural Filter</h4>
+             <p className="text-sm font-bold leading-relaxed relative z-10">Searching by keyword uses semantic mapping to find relevant reports even if exact matches aren't found.</p>
           </div>
         </div>
 
         {/* REPORTS LIST */}
         <div className="lg:col-span-9">
-          {summaries.length === 0 ? (
+          {filteredSummaries.length === 0 ? (
             <div className="bg-white rounded-[3rem] border-4 border-dashed border-slate-100 p-24 text-center">
               <div className="bg-slate-50 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
                 <svg className="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">No intelligence captured yet.</h3>
-              <p className="text-slate-500 mb-10 max-w-sm mx-auto font-medium leading-relaxed">Start by clicking "New Analysis" at the top to decode your first email thread.</p>
+              <h3 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">No matching reports.</h3>
+              <p className="text-slate-500 mb-10 max-w-sm mx-auto font-medium leading-relaxed">Adjust your filters or search query to find the intelligence you're looking for.</p>
               <button 
-                onClick={() => setShowAnalyzer(true)}
+                onClick={() => { setSearchQuery(''); setActiveFilter('ALL'); }}
                 className="inline-flex items-center px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all"
               >
-                Launch Intelligence Terminal
+                Clear All Filters
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {summaries.map((s) => {
+              {filteredSummaries.map((s) => {
                 const status = getCardStatus(s);
                 return (
                   <div key={s.id} className="group relative bg-white border border-slate-200/60 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:border-indigo-200 hover:-translate-y-1 transition-all duration-500">
@@ -331,17 +383,17 @@ const Dashboard: React.FC<DashboardProps> = ({ summaries, onDelete, onAddSummary
                       </p>
                       <div className="flex items-center justify-between border-t border-slate-50 pt-8">
                         <div className="flex items-center space-x-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                           <span>{new Date(s.created_at).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center space-x-3">
                           <div className="flex -space-x-2.5 overflow-hidden">
-                            {s.stakeholders.slice(0, 3).map((sh, idx) => (
+                            {(s.stakeholders || []).slice(0, 3).map((sh, idx) => (
                               <div key={idx} title={sh.name} className="inline-block h-7 w-7 rounded-xl ring-2 ring-white bg-indigo-50 text-[10px] flex items-center justify-center font-black text-indigo-400 border border-indigo-100">
-                                {sh.name[0]}
+                                {sh.name?.[0] || '?'}
                               </div>
                             ))}
-                            {s.stakeholders.length > 3 && (
+                            {(s.stakeholders || []).length > 3 && (
                               <div className="inline-block h-7 w-7 rounded-xl ring-2 ring-white bg-slate-100 text-[10px] flex items-center justify-center font-black text-slate-400 border border-slate-200">
                                 +{s.stakeholders.length - 3}
                               </div>

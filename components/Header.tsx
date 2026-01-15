@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <div className="hidden md:flex items-center space-x-8">
             {navItem('/roadmap', 'Roadmap')}
             {user && navItem('/dashboard', 'Dashboard')}
-            {/* Fix: Changed logic to correctly check if the user is NOT a pro subscriber */}
+            {user && navItem('/settings', 'Settings')}
             {user?.subscription_tier !== 'pro' && navItem('/pricing', 'Pricing')}
           </div>
 
@@ -44,12 +44,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
           {user ? (
             <div className="flex items-center space-x-4">
-              <div className="flex flex-col items-end">
+              <Link to="/settings" className="flex flex-col items-end hover:opacity-70 transition-opacity">
                 <span className="text-xs font-bold text-slate-400 hidden sm:inline">{user.email.split('@')[0]}</span>
                 {user.subscription_tier === 'pro' && (
                   <span className="text-[8px] font-black uppercase text-indigo-600 tracking-widest leading-none mt-0.5">Pro Member</span>
                 )}
-              </div>
+              </Link>
               <button 
                 onClick={onLogout}
                 className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors"

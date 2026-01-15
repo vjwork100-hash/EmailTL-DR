@@ -13,6 +13,7 @@ import Pricing from './components/Pricing';
 import ShareView from './components/ShareView';
 import UpgradeModal from './components/UpgradeModal';
 import PaymentSuccess from './components/PaymentSuccess';
+import Settings from './components/Settings';
 import { User, EmailSummary, ActionItem } from './types';
 import { FREE_LIMIT } from './constants';
 import { trackEvent, ANALYTICS_EVENTS } from './analytics';
@@ -83,6 +84,11 @@ const App: React.FC = () => {
     localStorage.setItem('email_smart_summaries', JSON.stringify(updated));
   };
 
+  const clearAllSummaries = () => {
+    setSummaries([]);
+    localStorage.setItem('email_smart_summaries', JSON.stringify([]));
+  };
+
   const rateSummary = (id: string, rating: 'up' | 'down' | 'middle') => {
     const updated = summaries.map(s => s.id === id ? { ...s, rating } : s);
     setSummaries(updated);
@@ -123,6 +129,7 @@ const App: React.FC = () => {
             <Route path="/share/:id" element={<ShareView summaries={summaries} onUpdateActionItem={updateActionItem} />} />
             <Route path="/dashboard" element={user ? <Dashboard summaries={summaries} onDelete={deleteSummary} onAddSummary={addSummary} user={user} /> : <Navigate to="/login" />} />
             <Route path="/summary/:id" element={<SummaryDetail summaries={summaries} onRate={rateSummary} onUpdateActionItem={updateActionItem} />} />
+            <Route path="/settings" element={user ? <Settings user={user} summaries={summaries} onClearAll={clearAllSummaries} /> : <Navigate to="/login" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>

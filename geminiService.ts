@@ -112,7 +112,18 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
             time_span: { type: Type.STRING },
             participant_count: { type: Type.INTEGER }
           },
-          required: ["thread_title", "summary", "status", "key_decision", "stakeholders", "confidence_score", "email_count", "time_span"]
+          required: [
+            "thread_title", 
+            "summary", 
+            "status", 
+            "key_decision", 
+            "stakeholders", 
+            "confidence_score", 
+            "email_count", 
+            "time_span", 
+            "your_action_items", 
+            "others_action_items"
+          ]
         }
       }
     });
@@ -123,6 +134,14 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
     const rawJson = JSON.parse(text);
     return {
       ...rawJson,
+      your_action_items: rawJson.your_action_items || [],
+      others_action_items: rawJson.others_action_items || [],
+      stakeholders: rawJson.stakeholders || [],
+      timeline: rawJson.timeline || [],
+      key_quotes: rawJson.key_quotes || [],
+      decision_reasoning: rawJson.decision_reasoning || [],
+      unresolved_questions: rawJson.unresolved_questions || [],
+      extraction_accuracy: rawJson.extraction_accuracy || [],
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       raw_thread: thread

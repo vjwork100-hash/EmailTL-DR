@@ -34,7 +34,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
 
   const handleExportPDF = () => {
     const originalTitle = document.title;
-    const safeTitle = summary.thread_title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const safeTitle = (summary.thread_title || 'Report').replace(/[^a-z0-9]/gi, '_').toLowerCase();
     document.title = `EmailSmart_Report_${safeTitle}`;
     
     setTimeout(() => {
@@ -141,7 +141,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Your Action Items</h3>
             </div>
             <div className="space-y-4">
-              {summary.your_action_items.length > 0 ? summary.your_action_items.map((item, idx) => (
+              {(summary.your_action_items || []).length > 0 ? summary.your_action_items.map((item, idx) => (
                 <ActionCard 
                   key={idx} 
                   item={item} 
@@ -162,7 +162,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Team Matrix</h3>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {summary.others_action_items.map((item, idx) => (
+              {(summary.others_action_items || []).map((item, idx) => (
                 <ActionCard 
                   key={idx} 
                   item={item} 
@@ -215,7 +215,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
              <div className="space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reasoning Bullets</p>
                 <ul className="grid grid-cols-1 gap-2">
-                  {summary.decision_reasoning.map((r, i) => (
+                  {(summary.decision_reasoning || []).map((r, i) => (
                     <li key={i} className="flex items-start space-x-3 text-sm font-medium text-slate-600">
                       <span className="text-indigo-500 mt-0.5">•</span>
                       <span>{r}</span>
@@ -234,11 +234,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Stakeholder Map</h3>
             </div>
             <div className="bg-white border border-slate-200 rounded-[3rem] p-6 shadow-sm divide-y divide-slate-50">
-              {summary.stakeholders.map((s, idx) => (
+              {(summary.stakeholders || []).map((s, idx) => (
                 <div key={idx} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs text-white shadow-lg ${s.involvement_level === 'HIGH' ? 'bg-indigo-600' : s.involvement_level === 'MEDIUM' ? 'bg-indigo-400' : 'bg-slate-300'}`}>
-                      {s.name[0]}
+                      {s.name?.[0] || '?'}
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 leading-none mb-1">{s.name}</p>
@@ -267,7 +267,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
         </div>
       </section>
 
-      {/* ORIGINAL THREAD MODAL (Preserved from previous implementation) */}
+      {/* ORIGINAL THREAD MODAL */}
       {showOriginal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 no-print">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowOriginal(false)} />
