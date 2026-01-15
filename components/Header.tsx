@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   );
 
   return (
-    <header className="sticky top-0 z-50 glass-card">
+    <header className="sticky top-0 z-50 glass-card no-print">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between max-w-5xl">
         <Link to="/" className="flex items-center space-x-3 group">
           <div className="bg-indigo-600 p-2 rounded-xl shadow-indigo-200 shadow-xl group-hover:scale-105 transition-transform duration-300">
@@ -35,15 +35,21 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
         <nav className="flex items-center space-x-8">
           <div className="hidden md:flex items-center space-x-8">
             {navItem('/roadmap', 'Roadmap')}
-            {navItem('/deploy', 'Deploy')}
             {user && navItem('/dashboard', 'Dashboard')}
+            {/* Fix: Changed logic to correctly check if the user is NOT a pro subscriber */}
+            {user?.subscription_tier !== 'pro' && navItem('/pricing', 'Pricing')}
           </div>
 
           <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
           {user ? (
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-bold text-slate-400 hidden sm:inline">{user.email.split('@')[0]}</span>
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-slate-400 hidden sm:inline">{user.email.split('@')[0]}</span>
+                {user.subscription_tier === 'pro' && (
+                  <span className="text-[8px] font-black uppercase text-indigo-600 tracking-widest leading-none mt-0.5">Pro Member</span>
+                )}
+              </div>
               <button 
                 onClick={onLogout}
                 className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors"

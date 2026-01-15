@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { EmailSummary, SummaryStatus, ActionItem, TimelineEvent, Stakeholder } from '../types';
+import { EmailSummary, SummaryStatus, ActionItem } from '../types';
 import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
 
 interface SummaryDisplayProps {
@@ -12,6 +12,7 @@ interface SummaryDisplayProps {
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = false, onRate }) => {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
 
   const getStatusConfig = (status: SummaryStatus) => {
     switch (status) {
@@ -23,22 +24,31 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'URGENT': return 'text-rose-500 bg-rose-50 border-rose-100';
-      case 'HIGH': return 'text-amber-600 bg-amber-50 border-amber-100';
-      case 'NORMAL': return 'text-blue-500 bg-blue-50 border-blue-100';
-      case 'LOW': return 'text-emerald-500 bg-emerald-50 border-emerald-100';
-      case 'COMPLETED': return 'text-emerald-600 bg-emerald-100 border-emerald-200';
-      default: return 'text-slate-500 bg-slate-50 border-slate-100';
-    }
-  };
-
   const handleCopy = () => {
     const text = `REPORT: ${summary.thread_title}\n\nDECISION: ${summary.key_decision}\n\nSUMMARY: ${summary.summary}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportPDF = () => {
+    const originalTitle = document.title;
+    // Sanitize title for filename suggestion
+    const safeTitle = summary.thread_title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    document.title = `EmailSmart_Report_${safeTitle}`;
+    
+    setTimeout(() => {
+      window.print();
+      document.title = originalTitle;
+    }, 100);
+  };
+
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/#/share/${summary.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    setShared(true);
+    trackEvent(ANALYTICS_EVENTS.SHARE_CLICKED, { summary_id: summary.id });
+    setTimeout(() => setShared(false), 2000);
   };
 
   const statusConfig = getStatusConfig(summary.status);
@@ -69,7 +79,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
 
       {/* 2. STATUS BOX (PROMINENT) */}
       <section className={`relative overflow-hidden rounded-[3rem] p-10 text-white shadow-2xl ${statusConfig.color}`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl no-print"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-10 items-start">
           <div className="flex-1 space-y-4">
             <h2 className="text-xs font-black uppercase tracking-[0.4em] text-white/70">Executive Summary</h2>
@@ -87,7 +97,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
               </div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:w-64 border border-white/10">
+          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:w-64 border border-white/10 no-print">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-3 text-center">AI Intelligence</h4>
             <div className="flex justify-center items-center h-24">
                <div className="relative w-20 h-20 flex items-center justify-center">
@@ -104,11 +114,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* LEFT COLUMN (COL 7) */}
         <div className="lg:col-span-7 space-y-12">
-          
-          {/* 3. YOUR ACTION ITEMS */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">🔴</span>
@@ -125,7 +131,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
           </section>
 
-          {/* 4. TEAM ACTION ITEMS */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">🔵</span>
@@ -138,7 +143,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
           </section>
 
-          {/* 5. KEY DECISION & BUDGET */}
           <section className="bg-white border border-slate-200 rounded-[3rem] p-10 space-y-8 shadow-sm">
              <div className="flex items-center space-x-3">
                 <span className="text-xl">💰</span>
@@ -193,10 +197,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
           </section>
         </div>
 
-        {/* RIGHT COLUMN (COL 5) */}
         <div className="lg:col-span-5 space-y-12">
-          
-          {/* 6. STAKEHOLDERS */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">👥</span>
@@ -222,7 +223,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
           </section>
 
-          {/* 7. TIMELINE (VISUAL) */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">📅</span>
@@ -248,7 +248,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
           </section>
 
-          {/* 8. KEY QUOTES */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">💬</span>
@@ -270,7 +269,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
           </section>
 
-          {/* 9. CONFIDENCE & QUALITY */}
           <section className="bg-teal-50 border border-teal-100 rounded-[3rem] p-10 space-y-6">
              <div className="flex items-center space-x-3">
                 <span className="text-xl">🔍</span>
@@ -288,7 +286,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
                 </ul>
              </div>
              {!readonly && (
-               <div className="pt-6 border-t border-teal-200/50 flex items-center justify-between">
+               <div className="pt-6 border-t border-teal-200/50 flex items-center justify-between no-print">
                   <p className="text-[10px] font-black text-teal-700 uppercase tracking-widest italic">Report Audit</p>
                   <div className="flex gap-2">
                     {['down', 'middle', 'up'].map((val) => (
@@ -307,17 +305,51 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
         </div>
       </div>
 
-      {/* 10. ACTION BUTTONS (BOTTOM) */}
-      <section className="sticky bottom-8 z-40 px-4">
-        <div className="max-w-3xl mx-auto bg-slate-900 text-white p-4 rounded-[2rem] shadow-2xl ring-1 ring-white/20 flex flex-wrap items-center justify-center gap-2">
-          <ActionButton onClick={handleCopy} icon="📋" label={copied ? 'Copied' : 'Copy'} />
-          <ActionButton onClick={() => { setShared(true); setTimeout(() => setShared(false), 2000); }} icon="🔗" label={shared ? 'Link Copied' : 'Share'} />
-          <ActionButton onClick={() => alert('PDF rendering...')} icon="📄" label="PDF" />
-          <ActionButton onClick={() => alert('Opening mail client...')} icon="📧" label="Email" />
-          <div className="w-px h-8 bg-white/10 mx-2 hidden sm:block"></div>
-          <ActionButton onClick={() => alert('Showing original raw data...')} icon="⚡" label="Original" highlight />
+      {/* PRINT-ONLY FOOTER */}
+      <div className="print-only mt-20 text-center border-t border-slate-100 pt-10">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+          Intelligence Report Generated by EmailSmart.io on {new Date().toLocaleDateString()}
+        </p>
+        <p className="text-[10px] font-medium text-slate-300 mt-2 italic">
+          High-fidelity neural extraction powered by Gemini 3 Flash.
+        </p>
+      </div>
+
+      {/* 10. ACTION BUTTONS (BOTTOM) - STATIC POSITION, TRANSPARENT, BLACK BORDER */}
+      <section className="mt-16 px-4 no-print">
+        <div className="max-w-4xl mx-auto bg-transparent p-6 rounded-[2.5rem] border-4 border-slate-900 flex flex-wrap items-center justify-center gap-4">
+          <ActionButton onClick={handleCopy} icon="📋" label={copied ? 'Copied' : 'Copy Content'} />
+          <ActionButton onClick={handleShare} icon="🔗" label={shared ? 'Link Copied' : 'Share Link'} />
+          <ActionButton onClick={handleExportPDF} icon="📄" label="Download PDF" />
+          <ActionButton onClick={() => alert('Opening mail client...')} icon="📧" label="Forward Report" />
+          <div className="w-px h-8 bg-slate-300 mx-2 hidden sm:block"></div>
+          <ActionButton onClick={() => setShowOriginal(true)} icon="⚡" label="Source Thread" highlight />
         </div>
       </section>
+
+      {/* ORIGINAL THREAD MODAL */}
+      {showOriginal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 no-print">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowOriginal(false)} />
+          <div className="relative bg-white w-full max-w-3xl h-[80vh] rounded-[2.5rem] shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Original Source Data</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 italic">Read-only decrypt of raw email chain</p>
+              </div>
+              <button onClick={() => setShowOriginal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-10 font-mono text-sm leading-relaxed text-slate-600 whitespace-pre-wrap bg-slate-50">
+              {summary.raw_thread || "No raw data preserved for this session."}
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end">
+               <button onClick={() => setShowOriginal(false)} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all">Close Viewer</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -349,7 +381,7 @@ const ActionCard: React.FC<{ item: ActionItem, isPersonal?: boolean }> = ({ item
         </div>
       </div>
       {isPersonal && (
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity no-print">
            <button className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-lg shadow-emerald-200">Complete</button>
            <button className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200">Snooze</button>
         </div>
@@ -361,10 +393,13 @@ const ActionCard: React.FC<{ item: ActionItem, isPersonal?: boolean }> = ({ item
 const ActionButton = ({ onClick, icon, label, highlight = false }: any) => (
   <button 
     onClick={onClick}
-    className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 ${highlight ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-700' : 'bg-white/10 hover:bg-white/20'}`}
+    className={`px-5 py-2.5 rounded-2xl text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 border border-slate-200/50 shadow-sm
+      ${highlight 
+        ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-100 hover:bg-indigo-700' 
+        : 'bg-white/80 text-slate-700 hover:bg-white hover:border-slate-300 hover:shadow-md'}`}
   >
-    <span>{icon}</span>
-    <span>{label}</span>
+    <span className="text-sm">{icon}</span>
+    <span className="font-black">{label}</span>
   </button>
 );
 

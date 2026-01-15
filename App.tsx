@@ -12,6 +12,7 @@ import Deployment from './components/Deployment';
 import Pricing from './components/Pricing';
 import ShareView from './components/ShareView';
 import UpgradeModal from './components/UpgradeModal';
+import PaymentSuccess from './components/PaymentSuccess';
 import { User, EmailSummary } from './types';
 import { FREE_LIMIT } from './constants';
 import { trackEvent, ANALYTICS_EVENTS } from './analytics';
@@ -40,6 +41,14 @@ const App: React.FC = () => {
     localStorage.setItem('email_smart_user', JSON.stringify(newUser));
   };
 
+  const handleUpgrade = () => {
+    if (user) {
+      const updatedUser: User = { ...user, subscription_tier: 'pro' };
+      setUser(updatedUser);
+      localStorage.setItem('email_smart_user', JSON.stringify(updatedUser));
+    }
+  };
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('email_smart_user');
@@ -47,8 +56,9 @@ const App: React.FC = () => {
 
   const addSummary = (summary: EmailSummary) => {
     const currentUsed = user ? user.summaries_used : Number(localStorage.getItem('email_smart_anon_count') || 0);
+    const isPro = user?.subscription_tier === 'pro';
     
-    if (!user && currentUsed >= FREE_LIMIT) {
+    if (!isPro && currentUsed >= FREE_LIMIT) {
       setShowUpgradeModal(true);
       trackEvent(ANALYTICS_EVENTS.UPGRADE_MODAL_VIEWED, { reason: 'limit_reached' });
       return;
@@ -92,15 +102,16 @@ const App: React.FC = () => {
             <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup onSignupSuccess={handleAuthSuccess} />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/deploy" element={<Deployment />} />
-            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/pricing" element={<Pricing user={user} />} />
+            <Route path="/payment-success" element={<PaymentSuccess onUpgrade={handleUpgrade} />} />
             <Route path="/share/:id" element={<ShareView summaries={summaries} />} />
-            <Route path="/dashboard" element={user ? <Dashboard summaries={summaries} onDelete={deleteSummary} /> : <Navigate to="/login" />} />
+            <Route path="/dashboard" element={user ? <Dashboard summaries={summaries} onDelete={deleteSummary} user={user} /> : <Navigate to="/login" />} />
             <Route path="/summary/:id" element={<SummaryDetail summaries={summaries} onRate={rateSummary} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
 
-        <footer className="border-t border-slate-200 py-12 text-center text-slate-400 text-sm">
+        <footer className="border-t border-slate-200 py-12 text-center text-slate-400 text-sm no-print">
           <div className="flex justify-center space-x-6 mb-4">
             <a href="#" className="hover:text-indigo-600 transition-colors">Twitter</a>
             <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>

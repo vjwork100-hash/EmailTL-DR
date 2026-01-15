@@ -124,7 +124,8 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
     return {
       ...rawJson,
       id: crypto.randomUUID(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      raw_thread: thread
     };
   } catch (error: any) {
     console.error("Gemini Error:", error);
