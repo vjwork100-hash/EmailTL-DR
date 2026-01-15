@@ -17,6 +17,7 @@ export interface ActionItem {
   owner_role?: string;
   time_estimate?: string;
   dependencies?: string[];
+  snoozed_until?: string; // ISO timestamp
 }
 
 export interface TimelineEvent {
@@ -70,6 +71,7 @@ export interface EmailSummary {
   time_span: string;
   participant_count: number;
   created_at: string;
+  raw_thread?: string;
   rating?: 'up' | 'down' | 'middle' | null;
   is_public?: boolean;
 }

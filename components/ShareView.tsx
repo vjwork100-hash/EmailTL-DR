@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { EmailSummary } from '../types';
+import { EmailSummary, ActionItem } from '../types';
 import SummaryDisplay from './SummaryDisplay';
 
 interface ShareViewProps {
   summaries: EmailSummary[];
+  onUpdateActionItem: (summaryId: string, itemIdx: number, isPersonal: boolean, newStatus: ActionItem['status']) => void;
 }
 
-const ShareView: React.FC<ShareViewProps> = ({ summaries }) => {
+const ShareView: React.FC<ShareViewProps> = ({ summaries, onUpdateActionItem }) => {
   const { id } = useParams<{ id: string }>();
   // In a real app, this would fetch from a database using the ID.
   // For the MVP, we check local session.
@@ -31,7 +32,11 @@ const ShareView: React.FC<ShareViewProps> = ({ summaries }) => {
           <a href="#" className="underline ml-2">Analyze your own threads for free.</a>
         </p>
       </div>
-      <SummaryDisplay summary={summary} readonly />
+      <SummaryDisplay 
+        summary={summary} 
+        readonly 
+        onUpdateActionItem={onUpdateActionItem}
+      />
     </div>
   );
 };

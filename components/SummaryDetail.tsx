@@ -1,15 +1,16 @@
 
 import React from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { EmailSummary } from '../types';
+import { EmailSummary, ActionItem } from '../types';
 import SummaryDisplay from './SummaryDisplay';
 
 interface SummaryDetailProps {
   summaries: EmailSummary[];
   onRate: (id: string, rating: 'up' | 'down') => void;
+  onUpdateActionItem: (summaryId: string, itemIdx: number, isPersonal: boolean, newStatus: ActionItem['status']) => void;
 }
 
-const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries, onRate }) => {
+const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries, onRate, onUpdateActionItem }) => {
   const { id } = useParams<{ id: string }>();
   const summary = summaries.find(s => s.id === id);
 
@@ -27,7 +28,11 @@ const SummaryDetail: React.FC<SummaryDetailProps> = ({ summaries, onRate }) => {
         <span>/</span>
         <span className="text-slate-900 font-black">{summary.thread_title}</span>
       </div>
-      <SummaryDisplay summary={summary} onRate={onRate} />
+      <SummaryDisplay 
+        summary={summary} 
+        onRate={onRate} 
+        onUpdateActionItem={onUpdateActionItem}
+      />
     </div>
   );
 };
