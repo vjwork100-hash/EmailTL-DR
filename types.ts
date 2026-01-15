@@ -27,6 +27,11 @@ export interface KeyQuote {
   author: string;
 }
 
+export interface Stakeholder {
+  name: string;
+  role: string;
+}
+
 export interface EmailSummary {
   id: string;
   thread_title: string;
@@ -36,7 +41,7 @@ export interface EmailSummary {
   decision_reasoning: string[];
   your_action_items: ActionItem[];
   others_action_items: ActionItem[];
-  stakeholders: Record<string, string>;
+  stakeholders: Stakeholder[];
   timeline: TimelineEvent[];
   key_quotes: KeyQuote[];
   next_steps: string;

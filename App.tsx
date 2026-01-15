@@ -5,30 +5,23 @@ import Header from './components/Header';
 import Landing from './components/Landing';
 import Dashboard from './components/Dashboard';
 import SummaryDetail from './components/SummaryDetail';
-import AuthModal from './components/AuthModal';
+import Login from './components/Login';
+import Signup from './components/Signup';
+import Roadmap from './components/Roadmap';
+import Deployment from './components/Deployment';
 import { User, EmailSummary } from './types';
 import { FREE_LIMIT } from './constants';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [summaries, setSummaries] = useState<EmailSummary[]>([]);
 
-  // Local storage based persistence for MVP demo
   useEffect(() => {
     const savedUser = localStorage.getItem('email_smart_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    } else {
-      // Initialize anonymous count if not present
-      const anonCount = localStorage.getItem('email_smart_anon_count');
-      if (!anonCount) localStorage.setItem('email_smart_anon_count', '0');
-    }
-
+    if (savedUser) setUser(JSON.parse(savedUser));
+    
     const savedSummaries = localStorage.getItem('email_smart_summaries');
-    if (savedSummaries) {
-      setSummaries(JSON.parse(savedSummaries));
-    }
+    if (savedSummaries) setSummaries(JSON.parse(savedSummaries));
   }, []);
 
   const handleAuthSuccess = (email: string) => {
@@ -40,7 +33,6 @@ const App: React.FC = () => {
     };
     setUser(newUser);
     localStorage.setItem('email_smart_user', JSON.stringify(newUser));
-    setIsAuthOpen(false);
   };
 
   const handleLogout = () => {
@@ -71,45 +63,30 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen gradient-bg flex flex-col">
-        <Header 
-          user={user} 
-          onLoginClick={() => setIsAuthOpen(true)} 
-          onLogout={handleLogout} 
-        />
+      <div className="min-h-screen gradient-bg flex flex-col selection:bg-indigo-100 selection:text-indigo-700">
+        <Header user={user} onLogout={handleLogout} />
         
-        <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+        <main className="flex-grow container mx-auto px-4 py-12 max-w-5xl">
           <Routes>
-            <Route path="/" element={
-              <Landing 
-                user={user} 
-                onAddSummary={addSummary} 
-                onAuthRequired={() => setIsAuthOpen(true)} 
-              />
-            } />
-            <Route path="/dashboard" element={
-              user ? (
-                <Dashboard 
-                  summaries={summaries} 
-                  onDelete={deleteSummary} 
-                />
-              ) : (
-                <Navigate to="/" />
-              )
-            } />
+            <Route path="/" element={<Landing user={user} onAddSummary={addSummary} />} />
+            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLoginSuccess={handleAuthSuccess} />} />
+            <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup onSignupSuccess={handleAuthSuccess} />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/deploy" element={<Deployment />} />
+            <Route path="/dashboard" element={user ? <Dashboard summaries={summaries} onDelete={deleteSummary} /> : <Navigate to="/login" />} />
             <Route path="/summary/:id" element={<SummaryDetail summaries={summaries} />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
 
-        <footer className="border-t py-8 text-center text-gray-500 text-sm">
-          &copy; {new Date().getFullYear()} EmailSmart. All rights reserved. Built for busy professionals.
+        <footer className="border-t border-slate-200 py-12 text-center text-slate-400 text-sm">
+          <div className="flex justify-center space-x-6 mb-4">
+            <a href="#" className="hover:text-indigo-600 transition-colors">Twitter</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Support</a>
+          </div>
+          &copy; {new Date().getFullYear()} EmailSmart. Engineering the future of communication.
         </footer>
-
-        <AuthModal 
-          isOpen={isAuthOpen} 
-          onClose={() => setIsAuthOpen(false)} 
-          onSuccess={handleAuthSuccess} 
-        />
       </div>
     </Router>
   );
