@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_API_KEY": "@vite_api_key",
+    "GEMINI_API_KEY": "AIzaSyAb3x8jPOnJDe7XG54ZPvbIoSaPSG1rneo"
+  }
+}
