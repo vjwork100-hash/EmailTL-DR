@@ -1,31 +1,46 @@
 
-import React, { ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { trackError } from '../analytics';
 
-// Fix: Made children optional to satisfy JSX usage when the compiler is strict about Prop types
-interface Props { children?: ReactNode; }
-interface State { hasError: boolean; error?: Error; }
+// Proper interfaces for component props and state to ensure type safety for children and error state
+interface Props {
+  children?: ReactNode;
+}
 
-// Fix: Explicitly declaring state and ensuring inheritance from React.Component works with the compiler
+interface State {
+  hasError: boolean;
+  error?: Error;
+}
+
+/**
+ * ErrorBoundary component that catches runtime errors in child components.
+ * Explicitly extending React.Component<Props, State> ensures that 'props' and 'state' properties 
+ * are correctly inherited and recognized by the TypeScript compiler within the class context.
+ */
+// FIX: Using explicit React.Component inheritance to ensure 'props' and 'state' are correctly typed and recognized by the compiler
 export class ErrorBoundary extends React.Component<Props, State> {
-  // Fix: Property 'state' declaration addresses errors on line 11 and 23
-  public state: State = { hasError: false };
+  // Initializing state via a public property initializer to avoid constructor boilerplate
+  public state: State = {
+    hasError: false
+  };
 
-  constructor(props: Props) {
-    super(props);
-    // Initial state is set via class property initialization above
-  }
-
-  static getDerivedStateFromError(error: Error) {
+  /**
+   * Standard getDerivedStateFromError implementation to update state on error.
+   * This is a static method as per React documentation for Error Boundaries.
+   */
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  /**
+   * Using ErrorInfo from React and tracking error in analytics for debugging.
+   */
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     trackError(error, 'GlobalErrorBoundary');
   }
 
   render() {
-    // Fix: Accessing this.state is now safe as it's declared in the class
+    // Accessing this.state from the React.Component base class to check for caught errors.
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 font-sans">
@@ -47,7 +62,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
         </div>
       );
     }
-    // Fix: Accessing this.props is now recognized by the compiler after property initialization fixes
+
+    // Accessing this.props.children from the React.Component base class.
+    // FIX: Explicitly ensuring this.props is recognized by the compiler via React.Component inheritance
     return this.props.children;
   }
 }

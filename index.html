@@ -33,6 +33,14 @@
         75% { transform: translateX(4px); }
       }
 
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
       /* PDF / PRINT OPTIMIZATION */
       @media print {
         header, footer, .no-print, .sticky, button, .modal-backdrop, [role="button"], .no-print-area {

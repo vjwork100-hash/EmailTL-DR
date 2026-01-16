@@ -12,6 +12,7 @@ export class EmailSmartError extends Error {
 }
 
 export const summarizeEmailThread = async (thread: string): Promise<EmailSummary> => {
+  // Always create a new instance to pick up potential API key updates from the AI Studio dialog
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   trackEvent(ANALYTICS_EVENTS.SUMMARIZE_CLICKED);
   
@@ -33,6 +34,9 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
             expected_outcome: { type: Type.STRING },
             decided_by: { type: Type.STRING },
             decided_at: { type: Type.STRING },
+            next_steps: { type: Type.STRING },
+            unresolved_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            extraction_accuracy: { type: Type.ARRAY, items: { type: Type.STRING } },
             budget: {
               type: Type.OBJECT,
               properties: {
@@ -64,6 +68,18 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
                   deadline: { type: Type.STRING },
                   priority: { type: Type.STRING },
                   status: { type: Type.STRING }
+                }
+              }
+            },
+            timeline: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  date: { type: Type.STRING },
+                  time: { type: Type.STRING },
+                  event: { type: Type.STRING },
+                  is_pending: { type: Type.BOOLEAN }
                 }
               }
             },
@@ -101,12 +117,26 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
       stakeholders: rawJson.stakeholders || [],
       timeline: rawJson.timeline || [],
       decision_reasoning: rawJson.decision_reasoning || [],
+      unresolved_questions: rawJson.unresolved_questions || [],
+      extraction_accuracy: rawJson.extraction_accuracy || [],
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       raw_thread: thread
     };
   } catch (error: any) {
     trackError(error, 'GeminiService');
+    
+    // Specifically handle 429 Resource Exhausted / Quota errors
+    const errorMessage = error.message || "";
+    if (errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("quota")) {
+      throw new EmailSmartError("Global quota exceeded. Please select a paid API key to continue.", "QUOTA_EXHAUSTED");
+    }
+    
+    // Handle entity not found (often related to invalid keys/projects)
+    if (errorMessage.includes("Requested entity was not found")) {
+      throw new EmailSmartError("API Project mismatch. Please re-select your API key.", "ENTITY_NOT_FOUND");
+    }
+
     throw new EmailSmartError(error.message || ERROR_MESSAGES.API_ERROR, "UNKNOWN");
   }
 };

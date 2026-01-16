@@ -14,6 +14,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  const [showExtractionDetails, setShowExtractionDetails] = useState(false);
 
   const getStatusConfig = (status: SummaryStatus) => {
     switch (status) {
@@ -84,7 +85,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
              <h1 className="text-3xl font-black text-slate-900 tracking-tight">{summary.thread_title}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
-            <span className="flex items-center"><svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" strokeWidth="2"/></svg>{summary.email_count} Emails</span>
+            <span className="flex items-center"><svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v10a2 2 0 002 2z" strokeWidth="2"/></svg>{summary.email_count} Emails</span>
             <span>•</span>
             <span className="flex items-center"><svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth="2"/></svg>{summary.time_span}</span>
             <span>•</span>
@@ -120,15 +121,54 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
           <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:w-64 border border-white/10 no-print">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-3 text-center">AI Intelligence</h4>
             <div className="flex justify-center items-center h-24">
-               <div className="relative w-20 h-20 flex items-center justify-center">
+               <button 
+                 onClick={() => setShowExtractionDetails(!showExtractionDetails)}
+                 className="relative w-20 h-20 flex items-center justify-center group hover:scale-110 transition-transform active:scale-95 outline-none"
+                 title="View detailed extraction notes"
+               >
                   <svg className="w-full h-full transform -rotate-90">
                     <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/20" />
-                    <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" strokeDasharray={220} strokeDashoffset={220 - (220 * summary.confidence_score) / 100} className="text-white" />
+                    <circle cx="40" cy="40" r="35" stroke="currentColor" strokeWidth="6" fill="transparent" strokeDasharray={220} strokeDashoffset={220 - (220 * summary.confidence_score) / 100} className="text-white group-hover:text-amber-200 transition-colors" />
                   </svg>
-                  <span className="absolute text-lg font-black">{summary.confidence_score}%</span>
-               </div>
+                  <span className="absolute text-lg font-black group-hover:text-xl transition-all">{summary.confidence_score}%</span>
+               </button>
             </div>
             <p className="text-[10px] font-bold text-center mt-3 text-white/80 uppercase">Confidence Score</p>
+            
+            {showExtractionDetails && (
+              <div className="mt-6 p-5 bg-black/20 rounded-2xl border border-white/10 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/70">Mapping Accuracy</h4>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-center text-[11px] font-bold text-white/90">
+                      <span className="text-emerald-400 mr-2">✓</span> {summary.your_action_items.length} tasks for you
+                    </li>
+                    <li className="flex items-center text-[11px] font-bold text-white/90">
+                      <span className="text-emerald-400 mr-2">✓</span> {summary.others_action_items.length} team tasks
+                    </li>
+                    <li className="flex items-center text-[11px] font-bold text-white/90">
+                      <span className="text-emerald-400 mr-2">✓</span> {summary.stakeholders.length} stakeholders
+                    </li>
+                    {(summary.extraction_accuracy || []).map((item, i) => (
+                      <li key={i} className="flex items-center text-[11px] font-bold text-white/90">
+                        <span className="text-emerald-400 mr-2">✓</span> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {summary.unresolved_questions && summary.unresolved_questions.length > 0 && (
+                  <div className="pt-3 border-t border-white/10 space-y-2">
+                    <p className="text-[9px] font-black uppercase text-rose-300/80 tracking-widest">Inferred Ambiguities</p>
+                    <ul className="space-y-1">
+                      {summary.unresolved_questions.map((q, i) => (
+                        <li key={i} className="text-[10px] leading-tight text-white/60 italic">⚠️ {q}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -159,7 +199,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">🔵</span>
-              <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Team Matrix</h3>
+              <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Team Units</h3>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {(summary.others_action_items || []).map((item, idx) => (
@@ -227,7 +267,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
         </div>
 
         <div className="lg:col-span-5 space-y-12">
-          {/* Timeline, Stakeholders, etc - remaining UI preserved */}
+          {/* STAKEHOLDERS */}
           <section className="space-y-6">
             <div className="flex items-center space-x-3 px-2">
               <span className="text-xl">👥</span>
@@ -235,21 +275,61 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({ summary, readonly = fal
             </div>
             <div className="bg-white border border-slate-200 rounded-[3rem] p-6 shadow-sm divide-y divide-slate-50">
               {(summary.stakeholders || []).map((s, idx) => (
-                <div key={idx} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
+                <div key={idx} className="py-5 first:pt-2 last:pb-2 flex items-center justify-between group transition-colors hover:bg-slate-50/50 rounded-2xl px-4">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs text-white shadow-lg ${s.involvement_level === 'HIGH' ? 'bg-indigo-600' : s.involvement_level === 'MEDIUM' ? 'bg-indigo-400' : 'bg-slate-300'}`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm text-white shadow-xl transition-transform group-hover:scale-110 ${s.involvement_level === 'HIGH' ? 'bg-indigo-600' : s.involvement_level === 'MEDIUM' ? 'bg-indigo-400' : 'bg-slate-300'}`}>
                       {s.name?.[0] || '?'}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900 leading-none mb-1">{s.name}</p>
+                      <p className="font-bold text-slate-900 leading-none mb-1 text-base">{s.name}</p>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.role}</p>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${s.involvement_level === 'HIGH' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 bg-slate-50'}`}>
-                    {s.involvement_level} Involvement
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-xl block border ${s.involvement_level === 'HIGH' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-slate-400 bg-slate-50 border-slate-100'}`}>
+                      {s.involvement_level}
+                    </span>
+                  </div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* FLOW MATRIX (TIMELINE) */}
+          <section className="space-y-6">
+            <div className="flex items-center space-x-3 px-2">
+              <span className="text-xl">🔄</span>
+              <h3 className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Flow Matrix</h3>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-[3rem] p-10 shadow-sm relative overflow-hidden">
+              <div className="absolute left-[3.1rem] top-14 bottom-14 w-0.5 bg-gradient-to-b from-indigo-500 via-slate-100 to-emerald-500"></div>
+              
+              <div className="space-y-12 relative z-10">
+                {(summary.timeline || []).length > 0 ? summary.timeline.map((event, idx) => (
+                  <div key={idx} className="flex items-start gap-6 group">
+                    <div className={`shrink-0 w-6 h-6 rounded-full border-4 border-white shadow-md transition-all duration-500 group-hover:scale-125 ${event.is_pending ? 'bg-amber-400 animate-pulse' : 'bg-indigo-600'}`}></div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{event.date}</span>
+                        {event.time && <span className="text-[10px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-lg">{event.time}</span>}
+                      </div>
+                      <p className={`text-sm font-bold leading-snug ${event.is_pending ? 'text-slate-500 italic' : 'text-slate-900'}`}>
+                        {event.event}
+                      </p>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-4">
+                    <p className="text-xs font-medium text-slate-400 italic">Sequential mapping unavailable for this thread type.</p>
+                  </div>
+                )}
+                
+                {/* Visual End Cap */}
+                <div className="flex items-center gap-6 opacity-30">
+                  <div className="shrink-0 w-6 h-6 rounded-full bg-slate-200"></div>
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">End of Chain</span>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -323,6 +403,9 @@ const ActionCard: React.FC<ActionCardProps> = ({ item, isPersonal, onStatusUpdat
             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-slate-100 bg-white text-slate-500`}>
               {item.priority} Priority
             </span>
+            {!isPersonal && item.owner && (
+               <span className="text-[8px] font-black uppercase tracking-widest text-indigo-600">Assigned: {item.owner}</span>
+            )}
           </div>
           <p className={`text-lg font-extrabold tracking-tight ${item.status === 'COMPLETED' ? 'line-through text-slate-300' : isPersonal ? 'text-slate-900' : 'text-slate-700'}`}>{item.task}</p>
           <div className="flex flex-wrap items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
