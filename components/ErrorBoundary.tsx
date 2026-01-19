@@ -14,11 +14,11 @@ interface State {
 
 /**
  * ErrorBoundary component that catches runtime errors in child components.
- * Explicitly extending React.Component<Props, State> ensures that 'props' and 'state' properties 
- * are correctly inherited and recognized by the TypeScript compiler within the class context.
+ * Explicitly extending Component<Props, State> ensures that 'props' and 'state' properties 
+ * are correctly inherited and recognized by the TypeScript compiler.
  */
-// FIX: Using explicit React.Component inheritance to ensure 'props' and 'state' are correctly typed and recognized by the compiler
-export class ErrorBoundary extends React.Component<Props, State> {
+// FIX: Using explicit Component inheritance to ensure 'props' and 'state' are correctly typed and recognized by the compiler
+export class ErrorBoundary extends Component<Props, State> {
   // Initializing state via a public property initializer to avoid constructor boilerplate
   public state: State = {
     hasError: false
@@ -40,7 +40,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   render() {
-    // Accessing this.state from the React.Component base class to check for caught errors.
+    // Accessing this.state from the Component base class to check for caught errors.
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 font-sans">
@@ -63,8 +63,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Accessing this.props.children from the React.Component base class.
-    // FIX: Explicitly ensuring this.props is recognized by the compiler via React.Component inheritance
+    // Accessing this.props.children from the Component base class.
+    // FIX: Explicitly ensuring this.props is recognized by the compiler via Component inheritance
     return this.props.children;
   }
 }
