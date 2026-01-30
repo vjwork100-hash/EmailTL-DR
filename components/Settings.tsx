@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { User, EmailSummary } from '../types';
-import { FREE_LIMIT } from '../constants';
+import { User, EmailSummary } from '../types.ts';
+import { FREE_LIMIT } from '../constants.ts';
 import { Link } from 'react-router-dom';
 
 interface SettingsProps {

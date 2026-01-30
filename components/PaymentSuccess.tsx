@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { verifySession } from '../stripeService';
+import { verifySession } from '../stripeService.ts';
 
 interface PaymentSuccessProps {
   onUpgrade: () => void;

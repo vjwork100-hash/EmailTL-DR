@@ -1,8 +1,8 @@
 
 import { useState, useCallback } from 'react';
-import { User } from '../types';
-import { STORAGE_KEYS } from '../constants';
-import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
+import { User } from '../types.ts';
+import { STORAGE_KEYS } from '../constants.ts';
+import { trackEvent, ANALYTICS_EVENTS } from '../analytics.ts';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(() => {

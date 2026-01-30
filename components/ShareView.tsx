@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { EmailSummary, ActionItem } from '../types';
-import SummaryDisplay from './SummaryDisplay';
+import { EmailSummary, ActionItem } from '../types.ts';
+import SummaryDisplay from './SummaryDisplay.tsx';
 
 interface ShareViewProps {
   summaries: EmailSummary[];

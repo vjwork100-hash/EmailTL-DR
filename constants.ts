@@ -59,8 +59,9 @@ export const SAMPLE_THREADS = [
   }
 ];
 
+// Upgraded to gemini-3-pro-preview for complex reasoning tasks
 export const API_CONFIG = {
-  GEMINI_MODEL: 'gemini-3-flash-preview',
+  GEMINI_MODEL: 'gemini-3-pro-preview',
   MAX_RETRIES: 3,
   TIMEOUT_MS: 30000,
   MAX_EMAIL_LENGTH: 100000,

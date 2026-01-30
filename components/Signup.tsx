@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { trackEvent, ANALYTICS_EVENTS } from '../analytics';
+import { trackEvent, ANALYTICS_EVENTS } from '../analytics.ts';
 
 interface SignupProps {
   onSignupSuccess: (email: string) => void;

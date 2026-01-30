@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { createCheckoutSession } from '../stripeService';
-import { User } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { createCheckoutSession } from '../stripeService.ts';
+import { User } from '../types.ts';
 
 interface PricingProps {
   user?: User | null;
@@ -14,6 +14,7 @@ const Pricing: React.FC<PricingProps> = ({ user }) => {
 
   const handleUpgrade = async () => {
     if (!user) {
+      // Use internal router navigation for safety
       navigate('/signup');
       return;
     }
@@ -21,8 +22,8 @@ const Pricing: React.FC<PricingProps> = ({ user }) => {
     setLoading(true);
     try {
       const { url } = await createCheckoutSession('price_pro_monthly');
-      // Simulate Stripe redirect
-      window.location.href = url;
+      // Use internal router navigation instead of window.location.href
+      navigate(url);
     } catch (error) {
       console.error("Payment failed", error);
       setLoading(false);

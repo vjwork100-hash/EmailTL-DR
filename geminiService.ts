@@ -1,8 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { EmailSummary, SummaryStatus } from "./types";
-import { SCHEMA_PROMPT, API_CONFIG, ERROR_MESSAGES } from "./constants";
-import { trackEvent, ANALYTICS_EVENTS, trackError } from "./analytics";
+import { EmailSummary, SummaryStatus } from "./types.ts";
+import { SCHEMA_PROMPT, API_CONFIG, ERROR_MESSAGES } from "./constants.ts";
+import { trackEvent, ANALYTICS_EVENTS, trackError } from "./analytics.ts";
 
 export class EmailSmartError extends Error {
   constructor(public message: string, public code?: string) {
@@ -11,8 +11,9 @@ export class EmailSmartError extends Error {
   }
 }
 
+// Fixed to align with the latest Google GenAI SDK guidelines
 export const summarizeEmailThread = async (thread: string): Promise<EmailSummary> => {
-  // Always create a new instance to pick up potential API key updates from the AI Studio dialog
+  // Always initialize a new GoogleGenAI instance right before the call to ensure up-to-date configuration
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   trackEvent(ANALYTICS_EVENTS.SUMMARIZE_CLICKED);
   
@@ -23,6 +24,8 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
       config: {
         systemInstruction: SCHEMA_PROMPT,
         responseMimeType: "application/json",
+        // Added thinkingBudget to allow for deep reasoning on complex business threads
+        thinkingConfig: { thinkingBudget: 4096 },
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -104,6 +107,7 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
       }
     });
 
+    // Access text property directly (it's a property, not a method)
     const text = response.text;
     if (!text) throw new EmailSmartError(ERROR_MESSAGES.API_ERROR, "EMPTY_RESPONSE");
     
@@ -125,18 +129,14 @@ export const summarizeEmailThread = async (thread: string): Promise<EmailSummary
     };
   } catch (error: any) {
     trackError(error, 'GeminiService');
-    
-    // Specifically handle 429 Resource Exhausted / Quota errors
-    const errorMessage = error.message || "";
-    if (errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("quota")) {
-      throw new EmailSmartError("Global quota exceeded. Please select a paid API key to continue.", "QUOTA_EXHAUSTED");
+    const msg = error.message || "";
+    if (msg.includes("429") || msg.includes("quota")) {
+      throw new EmailSmartError("Quota exceeded. Please select a paid API key.", "QUOTA_EXHAUSTED");
     }
-    
-    // Handle entity not found (often related to invalid keys/projects)
-    if (errorMessage.includes("Requested entity was not found")) {
-      throw new EmailSmartError("API Project mismatch. Please re-select your API key.", "ENTITY_NOT_FOUND");
+    // Specific check for entity not found which relates to API key availability issues
+    if (msg.includes("not found")) {
+      throw new EmailSmartError("API Key mismatch. Please re-select.", "ENTITY_NOT_FOUND");
     }
-
     throw new EmailSmartError(error.message || ERROR_MESSAGES.API_ERROR, "UNKNOWN");
   }
 };

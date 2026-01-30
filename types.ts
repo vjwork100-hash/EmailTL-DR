@@ -73,6 +73,7 @@ export interface EmailSummary {
   created_at: string;
   raw_thread?: string;
   rating?: 'up' | 'down' | 'middle' | null;
+  feedback_text?: string;
   is_public?: boolean;
 }
 

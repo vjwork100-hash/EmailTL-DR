@@ -1,5 +1,5 @@
 
-import { ERROR_MESSAGES, API_CONFIG } from '../constants';
+import { ERROR_MESSAGES, API_CONFIG } from '../constants.ts';
 
 export interface ValidationResult {
   isValid: boolean;

@@ -1,6 +1,5 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { trackError } from '../analytics';
+import { trackError } from '../analytics.ts';
 
 // Proper interfaces for component props and state to ensure type safety for children and error state
 interface Props {
@@ -14,15 +13,15 @@ interface State {
 
 /**
  * ErrorBoundary component that catches runtime errors in child components.
- * Explicitly extending Component<Props, State> ensures that 'props' and 'state' properties 
- * are correctly inherited and recognized by the TypeScript compiler.
+ * Extending Component directly ensures that 'props' and 'state' are correctly typed.
  */
-// FIX: Using explicit Component inheritance to ensure 'props' and 'state' are correctly typed and recognized by the compiler
 export class ErrorBoundary extends Component<Props, State> {
-  // Initializing state via a public property initializer to avoid constructor boilerplate
-  public state: State = {
-    hasError: false
-  };
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false
+    };
+  }
 
   /**
    * Standard getDerivedStateFromError implementation to update state on error.
@@ -40,7 +39,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   render() {
-    // Accessing this.state from the Component base class to check for caught errors.
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 font-sans">
@@ -63,8 +61,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Accessing this.props.children from the Component base class.
-    // FIX: Explicitly ensuring this.props is recognized by the compiler via Component inheritance
     return this.props.children;
   }
 }
