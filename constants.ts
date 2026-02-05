@@ -1,4 +1,3 @@
-
 export const FREE_LIMIT = 2;
 
 export const SCHEMA_PROMPT = `You are an elite email analyst specializing in business intelligence extraction.
@@ -59,9 +58,9 @@ export const SAMPLE_THREADS = [
   }
 ];
 
-// Upgraded to gemini-3-pro-preview for complex reasoning tasks
+// FIXED: Use correct Gemini model name
 export const API_CONFIG = {
-  GEMINI_MODEL: 'gemini-3-pro-preview',
+  GEMINI_MODEL: 'gemini-2.0-flash-exp', // Changed from 'gemini-3-flash-preview'
   MAX_RETRIES: 3,
   TIMEOUT_MS: 30000,
   MAX_EMAIL_LENGTH: 100000,
