@@ -58,9 +58,9 @@ export const SAMPLE_THREADS = [
   }
 ];
 
-// FIXED: Use correct Gemini model name
+// Use stable Gemini model (not experimental)
 export const API_CONFIG = {
-  GEMINI_MODEL: 'gemini-2.0-flash-exp', // Changed from 'gemini-3-flash-preview'
+  GEMINI_MODEL: 'gemini-2.5-flash', // Stable model for production use
   MAX_RETRIES: 3,
   TIMEOUT_MS: 30000,
   MAX_EMAIL_LENGTH: 100000,
