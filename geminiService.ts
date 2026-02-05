@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EmailSummary, SummaryStatus } from "./types.ts";
 import { SCHEMA_PROMPT, API_CONFIG, ERROR_MESSAGES } from "./constants.ts";
@@ -11,10 +10,28 @@ export class EmailSmartError extends Error {
   }
 }
 
+// Get API key from environment variables
+const getApiKey = (): string => {
+  // In Vite, environment variables must use import.meta.env and start with VITE_
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new EmailSmartError(
+      "API key not configured. Please add VITE_GEMINI_API_KEY to your environment variables.",
+      "MISSING_API_KEY"
+    );
+  }
+  
+  return apiKey;
+};
+
 // Fixed to align with the latest Google GenAI SDK guidelines
 export const summarizeEmailThread = async (thread: string): Promise<EmailSummary> => {
+  // Get API key first - will throw error if not set
+  const apiKey = getApiKey();
+  
   // Always initialize a new GoogleGenAI instance right before the call to ensure up-to-date configuration
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   trackEvent(ANALYTICS_EVENTS.SUMMARIZE_CLICKED);
   
   try {
